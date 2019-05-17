@@ -27,9 +27,11 @@ probs = freqs/len(data) # Calculate probabilistic of all value at a certain time
 
 #print(freqs)
 #print('\n')
+#print('probs')
 #print(probs)
+#print(probs.transpose())
 
-#p_z = pd.DataFrame(probs.transpose())
+#print(pd.DataFrame(probs.transpose()))
 p_z = pd.DataFrame(probs.transpose().sum()) #from probs of sensor value at each hour -> use sum to Calculate the probs of each sensor value
 p_t = pd.DataFrame(probs.sum()) # P(t)
 
@@ -40,6 +42,9 @@ p_t = pd.DataFrame(probs.sum()) # P(t)
 #print(p_t[0])
 
 cond_z_t = probs/p_t[0]  # P(z|t) == cond_z_t == P(z,t)/P(t)
+
+cond_t_z = probs.transpose()/probs.transpose().sum() #P(t|z) == P(t,z)/P(t)
+#print(cond_t_z)
 
 
 # HANDLE DAtA
@@ -55,6 +60,20 @@ def group_hour_data():
     d.lidar.get_group(6).hist() # make hist from all of value the sensor got at hour 6
     d.lidar.get_group(14).hist()
     d.lidar.get_group(8).hist()
+
+def p_t_z_by_bayes():
+    print("P(z=630) = ", p_z[0][630])
+    print("P(t=13) = ", p_t[0][13])
+    print("P(t=13|z=630) = ", cond_t_z[630][13])
+    print("Bayes(z=630|t=13) = ", cond_t_z[630][13]*p_z[0][630]/p_t[0][13])
+
+    print("answer P(z=630|t=13) = ", cond_z_t[13][630])
+
+def bayes_estimation(sensor_value, current_estimation):
+    new_estimation = []
+    for i in range(24):
+        new_estimation.append(cond_z_t[i][sensor_value]*current_estimation[i])
+    return new_estimation/sum(new_estimation) #正規化
 
 #######################################################################################
 
@@ -83,6 +102,10 @@ def probs_of_z_with_certain_t():
     print(cond_z_t)
     cond_z_t[6].plot.bar(color='blue',alpha=0.5)
     cond_z_t[14].plot.bar(color='orange',alpha=0.5)
+
+def graph_by_bayes_estimation():
+    estimation = bayes_estimation(630,p_t[0])
+    plt.plot(estimation)
 #######################################################################################
 
 if __name__ == "__main__":
@@ -91,5 +114,7 @@ if __name__ == "__main__":
     #condition_probs()
     #prob_of_t()
     #prob_of_z()
-    probs_of_z_with_certain_t()
+    #probs_of_z_with_certain_t()
+    #p_t_z_by_bayes()
+    graph_by_bayes_estimation()
     plt.show()
