@@ -35,6 +35,8 @@ probs = freqs/len(data) # Calculate probabilistic of all value at a certain time
 p_z = pd.DataFrame(probs.transpose().sum()) #from probs of sensor value at each hour -> use sum to Calculate the probs of each sensor value
 p_t = pd.DataFrame(probs.sum()) # P(t)
 
+#print (p_t[0])
+
 #print(p_z)
 #print('\n')
 #print(p_t)
@@ -72,8 +74,8 @@ def p_t_z_by_bayes():
 def bayes_estimation(sensor_value, current_estimation):
     new_estimation = []
     for i in range(24):
-        new_estimation.append(cond_z_t[i][sensor_value]*current_estimation[i])
-    return new_estimation/sum(new_estimation) #正規化
+        new_estimation.append(cond_z_t[i][sensor_value]*current_estimation[i]) #P(z = sensor_value|t=0->23) * P(t=0->23)
+    return new_estimation/sum(new_estimation) #正規化P(t|z) = (P(z=sensor_value|t) * P(t=0)) / sigma P(z= sensor_values ,t=0->23)
 
 #######################################################################################
 
@@ -103,8 +105,10 @@ def probs_of_z_with_certain_t():
     cond_z_t[6].plot.bar(color='blue',alpha=0.5)
     cond_z_t[14].plot.bar(color='orange',alpha=0.5)
 
-def graph_by_bayes_estimation():
-    estimation = bayes_estimation(630,p_t[0])
+def graph_by_bayes_estimation(*sensor_values):
+    estimation = p_t[0]
+    for value in sensor_values:
+        estimation = bayes_estimation(value, estimation) # from multi sensors value and P(t=0->23)
     plt.plot(estimation)
 #######################################################################################
 
@@ -116,5 +120,7 @@ if __name__ == "__main__":
     #prob_of_z()
     #probs_of_z_with_certain_t()
     #p_t_z_by_bayes()
-    graph_by_bayes_estimation()
+    #graph_by_bayes_estimation(630)
+    #graph_by_bayes_estimation(630,632,636)
+    graph_by_bayes_estimation(617,624,619)
     plt.show()
