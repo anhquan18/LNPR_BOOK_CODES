@@ -19,6 +19,7 @@ L = np.diag(eig_vals) # np.diagで対角行列を作成
 
 print("分析した物の計算\n", V.dot(L.dot(np.linalg.inv(V))))
 print("元の共分散行列:\n", np.array([[100, -25*math.sqrt(3)], [-25*math.sqrt(3), 50]]))
+print("\n")
 
 def draw_multi_dis():
     for dis in [a,b,c]:
@@ -29,8 +30,8 @@ def draw_multi_dis():
     plt.gca().set_ylabel('y')
 
 def output_eig_vals():
-    print("eig_vals:", eig_vals)
-    print("eig_vectors:", eig_vec)
+    print("eig_vals:\n", eig_vals)
+    print("eig_vectors:\n", eig_vec)
     print("固有ベクトル1:", eig_vec[:,0]) #eig_vecの縦の列が固有ベクトルに対応
     print("固有ベクトル2:", eig_vec[:,1])
 
@@ -50,6 +51,6 @@ def draw_vector_with_multi_var():
 
 if __name__ == '__main__':
     #draw_multi_dis()
-    #output_eig_values()
+    output_eig_vals()
     draw_vector_with_multi_var()
     plt.show()
