@@ -76,8 +76,8 @@ if __name__ == '__main__':
     world.append(m)          
 
     ### Create Robot###
-    circling = MclAgent(time_interval, 0.2, 10.0/180*math.pi, np.array([0, 0, 0]).T, m) #give map as parameter
-    r = Robot(np.array([0,0,0]).T, sensor=Camera(m), agent=circling, color="red")
+    circling = MclAgent(time_interval, 0.0001, 0.0001/180*math.pi, np.array([0, 0, 0]).T, m) #give map as parameter
+    r = Robot(np.array([2,3,0]).T, sensor=Camera(m), agent=circling, color="red")
     world.append(r)
 
     world.draw()                       # Animation # 
