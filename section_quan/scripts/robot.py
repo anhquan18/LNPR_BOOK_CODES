@@ -78,7 +78,7 @@ class Camera(IdealCamera): ###camera_fifth###
                  distance_noise_rate=0.1, direction_noise=math.pi/90,
                  distance_bias_rate_stddev=0.1, direction_bias_stddev=math.pi/90,
                  phantom_prob=0.0, phantom_range_x=(-5.0,5.0), phantom_range_y=(-5.0,5.0),
-                 oversight_prob=0.1):
+                 oversight_prob=0.1, occlusion_prob=0.0):
         IdealCamera.__init__(self,env_map, distance_range, direction_range)
         
         self.distance_noise_rate = distance_noise_rate
@@ -91,6 +91,7 @@ class Camera(IdealCamera): ###camera_fifth###
         self.phantom_prob = phantom_prob
         
         self.oversight_prob = oversight_prob 
+        self.occlusion_prob = occlusion_prob
         
     def noise(self, relpos):  
         ell = norm.rvs(loc=relpos[0], scale=relpos[0]*self.distance_noise_rate)
@@ -113,8 +114,15 @@ class Camera(IdealCamera): ###camera_fifth###
             return None
         else:
             return relpos
+
+    def occlusion(self, relpos):
+        if uniform.rvs() < self.occlusion_prob:
+            ell = relpos[0] + uniform.rvs()*(self.distance_range[1] - relpos[0])
+            return np.array([ell, relpos[1]]).T
+        else:
+            return relpos
     
-    def data(self, cam_pose):
+    def data_robot(self, cam_pose):
         observed = []
         for lm in self.map.landmarks:
             z = RobotLandMark.relative_polar_pos(lm.pose, cam_pose)
@@ -125,6 +133,21 @@ class Camera(IdealCamera): ###camera_fifth###
                     z = self.noise(z)  
                     observed.append((z, lm.id))
                     print("ROBOT",lm.color,"is watching:", z)
+            
+        self.lastdata = observed 
+        return observed
+
+    def data(self, cam_pose):
+        observed = []
+        for lm in self.map.landmarks:
+            z = self.relative_polar_pos(cam_pose, lm.pose)
+            z = self.phantom(cam_pose, z) 
+            z = self.occlusion(z) #追加
+            z = self.oversight(z)
+            if self.visible(z):                                                 
+                z = self.bias(z)
+                z = self.noise(z)  
+                observed.append((z, lm.id))
             
         self.lastdata = observed 
         return observed
