@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[1]:
@@ -6,7 +6,6 @@
 
 import sys 
 sys.path.append('../scripts/')
-from robot import *
 from kf import *
 
 
@@ -52,8 +51,8 @@ class Puddle:
 
 
 class PuddleWorld(World):
-    def __init__(self, time_span, time_interval):
-        super().__init__(time_span, time_interval)
+    def __init__(self, time_span, time_interval, debug=False):
+        super().__init__(time_span, time_interval, debug)
         self.puddles = []
         self.robots = []
         self.goals = []
@@ -80,9 +79,9 @@ class PuddleWorld(World):
 # In[5]:
 
 
-class PuddleIgnoreAgent(KfAgent): ###puddlerobot4（11行目まで）
-    def __init__(self, time_interval, init_pose, envmap, goal, puddle_coef=100,                  motion_noise_stds={"nn":0.19, "no":0.001, "on":0.13, "oo":0.2}): #nu, omegaを除去。goal追加
-        super().__init__(time_interval, 0.0, 0.0, init_pose, envmap, motion_noise_stds)
+class PuddleIgnoreAgent(EstimationAgent): ###puddlerobot4（11行目まで）
+    def __init__(self, time_interval, estimator, goal, puddle_coef=100): #nu, omegaを除去。goal追加
+        super().__init__(time_interval, 0.0, 0.0, estimator)
         
         self.puddle_coef = puddle_coef
         self.puddle_depth = 0.0
@@ -111,18 +110,18 @@ class PuddleIgnoreAgent(KfAgent): ###puddlerobot4（11行目まで）
         if self.in_goal:
             return 0.0, 0.0
         
-        self.kf.motion_update(self.prev_nu, self.prev_omega, self.time_interval)
-        self.kf.observation_update(observation)
+        self.estimator.motion_update(self.prev_nu, self.prev_omega, self.time_interval)
+        self.estimator.observation_update(observation)
         
         self.total_reward += self.time_interval*self.reward_per_sec()
-        
-        nu, omega = self.policy(self.kf.belief.mean, self.goal)
+
+        nu, omega = self.policy(self.estimator.pose, self.goal)
         self.prev_nu, self.prev_omega = nu, omega
         return nu, omega
         
     def draw(self, ax, elems): 
         super().draw(ax, elems)
-        x, y, _ = self.kf.belief.mean
+        x, y, _ = self.estimator.pose
         elems.append(ax.text(x+1.0, y-0.5, "reward/sec:" + str(self.reward_per_sec()), fontsize=8))
         elems.append(ax.text(x+1.0, y-1.0, "eval: {:.1f}".format(self.total_reward+self.final_value), fontsize=8))
 
@@ -130,32 +129,38 @@ class PuddleIgnoreAgent(KfAgent): ###puddlerobot4（11行目まで）
 # In[6]:
 
 
-if __name__ == '__main__':    ###changetopuddlerobot4
+def trial():  ###puddle_world4_trial
     time_interval = 0.1
-    world = PuddleWorld(40, time_interval) 
+    world = World(30, time_interval, debug=False) 
 
+    ## 地図を生成して3つランドマークを追加 ##
     m = Map()
-    m.append_landmark(Landmark(-4,2))
-    m.append_landmark(Landmark(2,-3))
-    m.append_landmark(Landmark(4,4))     #後の強化学習の章のために位置を隅に変更
-    m.append_landmark(Landmark(-4,-4))  #本章ではロボットの姿勢をなるべく正確に求めたいのでランドマークを増やす
-    world.append(m)
-    
-    ###ゴールの追加###
-    goal = Goal(-3,-3)
+    for ln in [(-4,2), (2,-3), (4,4), (-4,-4)]: m.append_landmark(Landmark(*ln))
+    world.append(m)   
+
+    ##ゴールの追加##
+    goal = Goal(-3,-3)  #goalを変数に
     world.append(goal)
     
-    ###水たまりの追加###
+    ##水たまりの追加##
     world.append(Puddle((-2, 0), (0, 2), 0.1)) 
     world.append(Puddle((-0.5, -2), (2.5, 1), 0.1)) 
 
-    ### ロボットを作る ###
-    a = PuddleIgnoreAgent(time_interval, np.array([0, 0, 0]).T, m, goal) #地図を引数で渡す
-    r = Robot(np.array([0,0,0]).T, sensor=Camera(m, distance_bias_rate_stddev=0, direction_bias_stddev=0), 
+   ##ロボットを作る##
+    initial_pose = np.array([2, 2,0]).T
+    kf = KalmanFilter(m, initial_pose) 
+    a = PuddleIgnoreAgent(time_interval, kf, goal) #goalを渡す
+    r = Robot(initial_pose, sensor=Camera(m, distance_bias_rate_stddev=0, direction_bias_stddev=0), 
               agent=a, color="red", bias_rate_stds=(0,0))
-
     world.append(r)
     
     world.draw()
-    #r.one_step(0.1)
+    
+#trial()
+
+
+# In[ ]:
+
+
+
 

@@ -44,8 +44,8 @@ class Particle(object):
             obs_pos = d[0] # z value: distance to lm, direction to lm
             obs_id = d[1]
 
-            pos_on_map = envmap.landmarks[obs_id].pose
-            particle_suggest_pos = IdealCamera.relative_polar_pos(self.pose, pos_on_map)
+            pos_on_map = envmap.landmarks[obs_id].pos
+            particle_suggest_pos = IdealCamera.observation_function(self.pose, pos_on_map)
 
             distance_dev = distance_dev_rate*particle_suggest_pos[0]
             cov = np.diag(np.array([distance_dev**2, direction_dev**2]))
